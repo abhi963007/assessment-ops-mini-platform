@@ -40,7 +40,8 @@ set "DB_NAME=assessment_db"
 set "DB_HOST=localhost"
 set "DB_PORT=5432"
 set "DATABASE_URL=postgresql://%DB_USER%:%DB_PASS%@%DB_HOST%:%DB_PORT%/%DB_NAME%"
-set "BACKEND_PORT=8000"
+:: Port 8000 is often blocked by Hyper-V on Windows, use 9000
+set "BACKEND_PORT=9000"
 
 echo [1/6] Checking PostgreSQL service...
 sc query postgresql-x64-16 | findstr "RUNNING" >nul 2>&1
@@ -107,6 +108,10 @@ echo   Press Ctrl+C in each window to stop.
 echo.
 
 :: Start backend in a new terminal
+:: Kill any previous backend instance on this port
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":%BACKEND_PORT%" ^| findstr "LISTENING"') do (
+    taskkill /PID %%a /F >nul 2>&1
+)
 start "Assessment Ops - Backend" cmd /k "cd backend && call venv\Scripts\activate.bat && set DATABASE_URL=%DATABASE_URL% && uvicorn app.main:app --reload --host 127.0.0.1 --port %BACKEND_PORT%"
 
 :: Wait for backend to start
