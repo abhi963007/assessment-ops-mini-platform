@@ -55,6 +55,7 @@
 | **Flag & Recompute** | Manually flag suspicious attempts, recompute scores on demand |
 | **Structured Logging** | Monolog-style JSON logs with `request_id` context propagation |
 | **Interactive Dashboard** | React + Tailwind UI with filters, pagination, and drill-down |
+| **Upload & Analyze** | Drag-drop file upload with dynamic analysis dashboard before ingestion |
 | **Docker Ready** | One command to spin up the entire stack |
 
 ---
@@ -181,6 +182,9 @@ print(f'Ingested: {data[\"ingested\"]} | Duplicates: {data[\"duplicates\"]} | Er
 curl -X POST http://localhost:8000/api/ingest/attempts \
   -H "Content-Type: application/json" \
   -d "{\"events\": $(cat attempt_events.json)}"
+
+# Or use the Upload & Analyze UI at http://localhost:5173/upload
+# Drag-drop your file → analyze → ingest with one click
 ```
 
 </details>
@@ -194,6 +198,9 @@ curl -X POST http://localhost:8000/api/ingest/attempts \
 | Method | Endpoint | Description |
 |:------:|----------|-------------|
 | `POST` | `/api/ingest/attempts` | Ingest batch of attempt events |
+| `POST` | `/api/upload/analyze` | Upload file & get dynamic analysis |
+| `POST` | `/api/upload/ingest` | Upload file & ingest into database |
+| `POST` | `/api/data/reset` | Clear all data for fresh import |
 | `GET` | `/api/attempts` | List attempts (filters + pagination) |
 | `GET` | `/api/attempts/{id}` | Get attempt detail with score & flags |
 | `GET` | `/api/attempts/{id}/duplicates` | Get duplicate thread (canonical + dups) |
@@ -377,7 +384,8 @@ assessment-ops-mini-platform/
 │       ├── routes/
 │       │   ├── ingest.py       # POST /api/ingest/attempts
 │       │   ├── attempts.py     # CRUD + recompute + flag
-│       │   └── leaderboard.py  # Rankings + /api/tests
+│       │   ├── leaderboard.py  # Rankings + /api/tests
+│       │   └── upload.py       # File upload, analysis & reset
 │       └── services/
 │           ├── normalize.py    # Email/phone/name normalization
 │           ├── scoring.py      # Score computation engine
@@ -395,9 +403,10 @@ assessment-ops-mini-platform/
         ├── main.tsx            # Entry point
         ├── api/client.ts       # Axios API client + types
         └── pages/
-            ├── AttemptsList.tsx # Filterable attempts table
+            ├── AttemptsList.tsx  # Filterable attempts table
             ├── AttemptDetail.tsx # Score breakdown + actions
-            └── Leaderboard.tsx  # Ranked student table
+            ├── Leaderboard.tsx   # Ranked student table
+            └── UploadAnalyze.tsx # File upload & dynamic analysis
 ```
 
 ---

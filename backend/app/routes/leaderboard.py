@@ -96,7 +96,7 @@ def get_leaderboard(
             correct=score.correct,
             wrong=score.wrong,
             skipped=score.skipped,
-            submitted_at=attempt.submitted_at,
+            submitted_at=attempt.submitted_at or attempt.started_at,
         ))
 
     logger.log_with_data(

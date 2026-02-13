@@ -98,7 +98,22 @@ Every log line includes:
 
 Only `SCORED` and `FLAGGED` attempts are included (not `DEDUPED` or `INGESTED`).
 
-## 8. Tech Stack Choices
+## 8. Upload & Analyze Feature
+
+**Decision:** Added a user-friendly file upload flow as an alternative to the raw `POST /api/ingest/attempts` endpoint.
+
+**Flow:**
+1. User uploads `.json` or `.csv` file via drag-drop UI
+2. Backend analyzes the data dynamically (student counts, test breakdown, answer distribution, duration stats, channels, potential duplicates)
+3. User reviews the analysis dashboard before deciding to ingest
+4. Optional "Clear existing data" checkbox for fresh imports
+5. Ingestion shows results: scored / duplicates / skipped / errors
+
+**SKIPPED status:** When re-uploading the same file, events with `source_event_id` already in the database are returned as `SKIPPED` instead of being re-processed. This prevents duplicate ingestion without requiring a full database reset.
+
+**CSV support:** The upload endpoint also accepts `.csv` files with flexible column mapping, converting them to the same event format used by the JSON ingestion pipeline.
+
+## 9. Tech Stack Choices
 
 | Choice | Reason |
 |--------|--------|
