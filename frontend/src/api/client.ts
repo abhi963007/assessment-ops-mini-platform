@@ -93,12 +93,23 @@ export interface IngestResponse {
   duplicates: number;
   errors: number;
   skipped: number;
+  warnings: number;
   results: Array<{
     source_event_id: string;
     attempt_id: string | null;
     status: string;
     message: string;
   }>;
+}
+
+export interface DbStats {
+  total_attempts: number;
+  total_students: number;
+  total_tests: number;
+  scored: number;
+  deduped: number;
+  flagged: number;
+  has_data: boolean;
 }
 
 // --- API calls ---
@@ -213,6 +224,11 @@ export async function uploadAndAnalyze(file: File): Promise<AnalyzeResponse> {
   const { data } = await api.post('/api/upload/analyze', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data;
+}
+
+export async function fetchStats(): Promise<DbStats> {
+  const { data } = await api.get('/api/data/stats');
   return data;
 }
 

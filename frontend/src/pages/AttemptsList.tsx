@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Filter, ChevronLeft, ChevronRight, Copy, AlertTriangle } from 'lucide-react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import {
+  Search, Filter, ChevronLeft, ChevronRight, Copy, AlertTriangle,
+  Upload, Database, FileUp,
+} from 'lucide-react';
 import { fetchAttempts, fetchTests, Attempt, Test } from '../api/client';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -130,9 +133,33 @@ function AttemptsList() {
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
+          <div className="p-12 text-center text-gray-400 flex flex-col items-center gap-2">
+            <span className="w-6 h-6 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+            <span className="text-sm">Loading attempts...</span>
+          </div>
+        ) : attempts.length === 0 && !statusFilter && !testFilter && !dupFilter && !searchQuery ? (
+          <div className="p-16 text-center flex flex-col items-center gap-4">
+            <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center">
+              <Database className="w-8 h-8 text-indigo-300" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">No data yet</h3>
+              <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">
+                Upload your assessment data file to get started. We'll analyze, deduplicate, and score all attempts automatically.
+              </p>
+            </div>
+            <Link
+              to="/upload"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200"
+            >
+              <Upload className="w-4 h-4" /> Upload & Analyze Data
+            </Link>
+          </div>
         ) : attempts.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">No attempts found.</div>
+          <div className="p-12 text-center flex flex-col items-center gap-3">
+            <Search className="w-8 h-8 text-gray-300" />
+            <p className="text-sm text-gray-500">No attempts match your filters.</p>
+          </div>
         ) : (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">

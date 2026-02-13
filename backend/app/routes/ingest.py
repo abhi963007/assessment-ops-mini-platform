@@ -153,8 +153,8 @@ def process_single_event(
     if not started_at:
         return IngestResultItem(
             source_event_id=event.source_event_id,
-            status='ERROR',
-            message=f'Invalid or missing started_at: {event.started_at}',
+            status='WARNING',
+            message=f'Skipped: malformed timestamp ({event.started_at})',
         )
 
     submitted_at = parse_timestamp(event.submitted_at)
@@ -246,6 +246,7 @@ def ingest_attempts(
     duplicates = 0
     errors = 0
     skipped = 0
+    warnings = 0
 
     for event in request.events:
         try:
@@ -258,6 +259,8 @@ def ingest_attempts(
                 duplicates += 1
             elif result.status == 'SKIPPED':
                 skipped += 1
+            elif result.status == 'WARNING':
+                warnings += 1
             else:
                 errors += 1
         except Exception as e:
@@ -294,5 +297,6 @@ def ingest_attempts(
         duplicates=duplicates,
         errors=errors,
         skipped=skipped,
+        warnings=warnings,
         results=results,
     )

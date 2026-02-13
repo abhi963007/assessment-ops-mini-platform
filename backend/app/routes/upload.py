@@ -309,6 +309,7 @@ async def upload_and_ingest(
     duplicates = 0
     errors = 0
     skipped = 0
+    warnings = 0
 
     for event_data in events:
         try:
@@ -322,6 +323,8 @@ async def upload_and_ingest(
                 duplicates += 1
             elif result.status == 'SKIPPED':
                 skipped += 1
+            elif result.status == 'WARNING':
+                warnings += 1
             else:
                 errors += 1
         except Exception as e:
@@ -340,7 +343,7 @@ async def upload_and_ingest(
     logger.log_with_data(
         logging.INFO,
         f'File ingestion complete: {ingested} ingested, {duplicates} duplicates, '
-        f'{skipped} skipped, {errors} errors ({duration_ms}ms)',
+        f'{skipped} skipped, {warnings} warnings, {errors} errors ({duration_ms}ms)',
     )
 
     return IngestResponse(
@@ -348,8 +351,30 @@ async def upload_and_ingest(
         duplicates=duplicates,
         errors=errors,
         skipped=skipped,
+        warnings=warnings,
         results=results,
     )
+
+
+@router.get('/api/data/stats')
+def get_stats(db: Session = Depends(get_db)):
+    """Get database statistics for dashboard."""
+    from sqlalchemy import func
+    total_attempts = db.query(func.count(Attempt.id)).scalar() or 0
+    total_students = db.query(func.count(Student.id)).scalar() or 0
+    total_tests = db.query(func.count(Test.id)).scalar() or 0
+    scored = db.query(func.count(Attempt.id)).filter(Attempt.status == 'SCORED').scalar() or 0
+    deduped = db.query(func.count(Attempt.id)).filter(Attempt.status == 'DEDUPED').scalar() or 0
+    flagged = db.query(func.count(Attempt.id)).filter(Attempt.status == 'FLAGGED').scalar() or 0
+    return {
+        'total_attempts': total_attempts,
+        'total_students': total_students,
+        'total_tests': total_tests,
+        'scored': scored,
+        'deduped': deduped,
+        'flagged': flagged,
+        'has_data': total_attempts > 0,
+    }
 
 
 @router.post('/api/data/reset')

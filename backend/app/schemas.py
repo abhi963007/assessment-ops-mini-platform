@@ -122,6 +122,7 @@ class IngestResponse(BaseModel):
     duplicates: int
     errors: int
     skipped: int = 0
+    warnings: int = 0
     results: list[IngestResultItem]
 
 

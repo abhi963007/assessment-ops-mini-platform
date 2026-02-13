@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import {
   Upload, FileJson, FileSpreadsheet, BarChart3, Users, BookOpen,
   Clock, AlertTriangle, CheckCircle2, XCircle, Loader2, ArrowRight,
-  FileUp, Trash2, PieChart, TrendingUp,
+  FileUp, Trash2, PieChart, TrendingUp, Database,
 } from 'lucide-react';
 import {
   uploadAndAnalyze, uploadAndIngest, resetDatabase,
@@ -11,7 +11,11 @@ import {
 
 type Step = 'upload' | 'analyzing' | 'analyzed' | 'ingesting' | 'ingested';
 
-function UploadAnalyze() {
+interface Props {
+  onIngestComplete?: () => void;
+}
+
+function UploadAnalyze({ onIngestComplete }: Props) {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -70,6 +74,7 @@ function UploadAnalyze() {
       const res = await uploadAndIngest(file);
       setIngestResult(res);
       setStep('ingested');
+      onIngestComplete?.();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Ingestion failed';
       setError(msg);
@@ -425,43 +430,69 @@ function UploadAnalyze() {
                 <CheckCircle2 className="w-5 h-5 text-green-600" />
                 <h3 className="font-semibold text-gray-900">Ingestion Complete!</h3>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
                   <p className="text-3xl font-bold text-green-600">{ingestResult.ingested}</p>
                   <p className="text-xs text-gray-500 mt-1">Ingested & Scored</p>
                 </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                <div className="text-center p-4 bg-yellow-50 rounded-xl border border-yellow-100">
                   <p className="text-3xl font-bold text-yellow-600">{ingestResult.duplicates}</p>
                   <p className="text-xs text-gray-500 mt-1">Duplicates Found</p>
                 </div>
                 {ingestResult.skipped > 0 && (
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-center p-4 bg-blue-50 rounded-xl border border-blue-100">
                     <p className="text-3xl font-bold text-blue-600">{ingestResult.skipped}</p>
                     <p className="text-xs text-gray-500 mt-1">Already Existed</p>
                   </div>
                 )}
-                <div className="text-center p-4 bg-red-50 rounded-lg">
-                  <p className="text-3xl font-bold text-red-600">{ingestResult.errors}</p>
-                  <p className="text-xs text-gray-500 mt-1">Errors</p>
-                </div>
+                {ingestResult.warnings > 0 && (
+                  <div className="text-center p-4 bg-amber-50 rounded-xl border border-amber-100">
+                    <p className="text-3xl font-bold text-amber-500">{ingestResult.warnings}</p>
+                    <p className="text-xs text-gray-500 mt-1">Warnings</p>
+                  </div>
+                )}
+                {ingestResult.errors > 0 && (
+                  <div className="text-center p-4 bg-red-50 rounded-xl border border-red-100">
+                    <p className="text-3xl font-bold text-red-600">{ingestResult.errors}</p>
+                    <p className="text-xs text-gray-500 mt-1">Errors</p>
+                  </div>
+                )}
               </div>
 
-              {/* Show first few errors if any */}
+              {/* Show warnings (malformed data) */}
+              {ingestResult.warnings > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Warnings ({ingestResult.warnings} events skipped)
+                  </p>
+                  <ul className="space-y-1">
+                    {ingestResult.results
+                      .filter((r) => r.status === 'WARNING')
+                      .slice(0, 5)
+                      .map((r, i) => (
+                        <li key={i} className="text-xs text-amber-600">
+                          <span className="font-mono bg-amber-100 px-1 rounded">{r.source_event_id}</span>{' '}
+                          — {r.message}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Show errors */}
               {ingestResult.errors > 0 && (
-                <div className="bg-red-50 rounded-lg p-3">
-                  <p className="text-xs font-medium text-red-700 mb-2">Error details:</p>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-red-700 mb-2 flex items-center gap-1.5">
+                    <XCircle className="w-3.5 h-3.5" /> Errors ({ingestResult.errors})
+                  </p>
                   <ul className="space-y-1">
                     {ingestResult.results
                       .filter((r) => r.status === 'ERROR')
                       .slice(0, 5)
                       .map((r, i) => (
                         <li key={i} className="text-xs text-red-600">
-                          <span className="font-mono">{r.source_event_id}</span>:{' '}
-                          {r.message.includes('started_at')
-                            ? 'Invalid date/time format in the event data'
-                            : r.message.length > 120
-                              ? r.message.slice(0, 120) + '...'
-                              : r.message}
+                          <span className="font-mono bg-red-100 px-1 rounded">{r.source_event_id}</span>{' '}
+                          — {r.message.length > 100 ? r.message.slice(0, 100) + '...' : r.message}
                         </li>
                       ))}
                   </ul>
@@ -470,7 +501,8 @@ function UploadAnalyze() {
 
               {/* Skipped info */}
               {ingestResult.skipped > 0 && (
-                <div className="bg-blue-50 rounded-lg p-3 text-xs text-blue-700">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700 flex items-center gap-2">
+                  <Database className="w-4 h-4 flex-shrink-0" />
                   {ingestResult.skipped} events were already in the database and were skipped.
                   Use the "Clear existing data" checkbox for a fresh import.
                 </div>
