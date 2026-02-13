@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title Assessment Ops Mini Platform
 color 0A
 
@@ -8,27 +9,30 @@ echo   Assessment Ops Mini Platform - Quick Start
 echo  ============================================
 echo.
 
-:: Check if PostgreSQL is available
+:: Try to add PostgreSQL to PATH if not already available
+set "PGBIN=C:\Program Files\PostgreSQL\16\bin"
 where psql >nul 2>&1
-if %errorlevel% neq 0 (
-    set "PGBIN=C:\Program Files\PostgreSQL\16\bin"
+if !errorlevel! neq 0 (
     if exist "!PGBIN!\psql.exe" (
-        set "PATH=!PGBIN!;%PATH%"
+        set "PATH=!PGBIN!;!PATH!"
+        echo       Added PostgreSQL 16 to PATH.
     ) else (
-        echo [!] PostgreSQL not found in PATH.
-        echo     Please install PostgreSQL 16 or add it to PATH.
+        :: Try other common PostgreSQL versions
+        for %%V in (17 18 15 14) do (
+            if exist "C:\Program Files\PostgreSQL\%%V\bin\psql.exe" (
+                set "PATH=C:\Program Files\PostgreSQL\%%V\bin;!PATH!"
+                echo       Added PostgreSQL %%V to PATH.
+                goto :pg_found
+            )
+        )
+        echo [X] PostgreSQL not found in PATH.
+        echo     Please install PostgreSQL or add its bin folder to PATH.
+        echo     Expected location: C:\Program Files\PostgreSQL\16\bin
         pause
         exit /b 1
     )
 )
-
-:: Enable delayed expansion for variables inside blocks
-setlocal enabledelayedexpansion
-
-set "PGBIN=C:\Program Files\PostgreSQL\16\bin"
-if exist "%PGBIN%\psql.exe" (
-    set "PATH=%PGBIN%;%PATH%"
-)
+:pg_found
 
 set "DB_USER=assessment"
 set "DB_PASS=assessment123"
