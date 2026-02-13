@@ -2,7 +2,7 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, case
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -67,7 +67,7 @@ def get_leaderboard(
             AttemptScore.score.desc(),
             AttemptScore.accuracy.desc(),
             AttemptScore.net_correct.desc(),
-            Attempt.submitted_at.asc().nullslast(),
+            func.coalesce(Attempt.submitted_at, Attempt.started_at).asc(),
         )
         .all()
     )

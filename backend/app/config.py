@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     @property
     def db_url(self) -> str:
         if self.DATABASE_URL:
-            return self.DATABASE_URL
+            return self.DATABASE_URL.strip()
         return (
-            f'postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}'
-            f'@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}'
+            f'postgresql://{self.POSTGRES_USER.strip()}:{self.POSTGRES_PASSWORD.strip()}'
+            f'@{self.POSTGRES_HOST.strip()}:{self.POSTGRES_PORT}/{self.POSTGRES_DB.strip()}'
         )
 
 

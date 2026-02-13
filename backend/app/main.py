@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.services.structured_log import setup_logging, request_context, get_logger
-from app.routes import ingest, attempts, leaderboard
+from app.routes import ingest, attempts, leaderboard, upload
 
 # Initialize structured logging
 setup_logging(settings.LOG_LEVEL)
@@ -99,6 +99,7 @@ async def structured_logging_middleware(request: Request, call_next):
 app.include_router(ingest.router, tags=['Ingest'])
 app.include_router(attempts.router, tags=['Attempts'])
 app.include_router(leaderboard.router, tags=['Leaderboard'])
+app.include_router(upload.router, tags=['Upload'])
 
 
 @app.get('/api/health')

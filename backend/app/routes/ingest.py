@@ -128,6 +128,18 @@ def process_single_event(
     """Process a single attempt event: validate, store, dedup, score."""
     raw_payload = event.model_dump()
 
+    # Skip if source_event_id already exists in DB
+    existing = db.query(Attempt).filter(
+        Attempt.source_event_id == event.source_event_id
+    ).first()
+    if existing:
+        return IngestResultItem(
+            source_event_id=event.source_event_id,
+            attempt_id=existing.id,
+            status='SKIPPED',
+            message=f'Already ingested (attempt {existing.id})',
+        )
+
     # Validate: must have at least email or phone
     if not event.student.email and not event.student.phone:
         return IngestResultItem(
@@ -233,6 +245,7 @@ def ingest_attempts(
     ingested = 0
     duplicates = 0
     errors = 0
+    skipped = 0
 
     for event in request.events:
         try:
@@ -243,6 +256,8 @@ def ingest_attempts(
                 ingested += 1
             elif result.status == 'DEDUPED':
                 duplicates += 1
+            elif result.status == 'SKIPPED':
+                skipped += 1
             else:
                 errors += 1
         except Exception as e:
@@ -278,5 +293,6 @@ def ingest_attempts(
         ingested=ingested,
         duplicates=duplicates,
         errors=errors,
+        skipped=skipped,
         results=results,
     )

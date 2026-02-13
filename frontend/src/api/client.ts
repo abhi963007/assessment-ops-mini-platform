@@ -92,6 +92,7 @@ export interface IngestResponse {
   ingested: number;
   duplicates: number;
   errors: number;
+  skipped: number;
   results: Array<{
     source_event_id: string;
     attempt_id: string | null;
@@ -152,6 +153,80 @@ export async function fetchLeaderboard(testId: string): Promise<LeaderboardRespo
 
 export async function ingestAttempts(events: unknown[]): Promise<IngestResponse> {
   const { data } = await api.post('/api/ingest/attempts', { events });
+  return data;
+}
+
+// --- Upload & Analyze types ---
+
+export interface DurationStats {
+  avg_minutes: number | null;
+  min_minutes: number | null;
+  max_minutes: number | null;
+  sample_count: number;
+}
+
+export interface DateRange {
+  earliest: string;
+  latest: string;
+  span_days: number;
+}
+
+export interface TestBreakdown {
+  name: string;
+  count: number;
+  max_marks: number;
+}
+
+export interface AnswerEntry {
+  answer: string;
+  count: number;
+}
+
+export interface FileAnalysis {
+  filename: string;
+  file_size_kb: number;
+  total_events: number;
+  unique_students: number;
+  unique_emails: number;
+  unique_phones: number;
+  tests: TestBreakdown[];
+  avg_questions_per_attempt: number;
+  total_answers: number;
+  answered_count: number;
+  skip_count: number;
+  skip_rate_percent: number;
+  top_answers: AnswerEntry[];
+  channels: Record<string, number> | null;
+  duration_stats: DurationStats | null;
+  date_range: DateRange | null;
+  potential_duplicate_groups: number;
+}
+
+export interface AnalyzeResponse {
+  analysis: FileAnalysis;
+  events: unknown[];
+}
+
+export async function uploadAndAnalyze(file: File): Promise<AnalyzeResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post('/api/upload/analyze', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+export async function resetDatabase(): Promise<{ status: string; message: string }> {
+  const { data } = await api.post('/api/data/reset');
+  return data;
+}
+
+export async function uploadAndIngest(file: File): Promise<IngestResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post('/api/upload/ingest', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data;
 }
 
